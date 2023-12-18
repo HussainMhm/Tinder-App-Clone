@@ -4,7 +4,16 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons, Entypo } from "@expo/vector-icons";
 import useAuth from "../hooks/useAuth";
 import Swiper from "react-native-deck-swiper";
-import { collection, doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    onSnapshot,
+    query,
+    setDoc,
+    where,
+} from "firebase/firestore";
 import { db } from "../firebase";
 
 const DUMMY_DATA = [
@@ -52,16 +61,37 @@ const HomeScreen = () => {
         let unsubscribe;
 
         const fetchCards = async () => {
-            unsubscribe = onSnapshot(collection(db, "users"), (snapShot) => {
-                setProfiles(
-                    snapShot.docs
-                        .filter((doc) => doc.id !== user.uid)
-                        .map((doc) => ({
-                            id: doc.id,
-                            ...doc.data(),
-                        }))
-                );
-            });
+            //comes after doing passes in swipeleft
+
+            const passes = await getDocs(collection(db, "users", user.uid, "passes")).then(
+                (snapShot) => snapShot.docs.map((doc) => doc.id)
+            );
+
+            // console.log(passes);
+
+            const swipes = await getDocs(collection(db, "users", user.uid, "swipes")).then(
+                (snapShot) => snapShot.docs.map((doc) => doc.id)
+            );
+
+            const passedUserIds = passes.length > 0 ? passes : ["temp"];
+            const swipedUserIds = swipes.length > 0 ? swipes : ["temp"];
+
+            unsubscribe = onSnapshot(
+                query(
+                    collection(db, "users"),
+                    where("id", "not-in", [...passedUserIds, ...swipedUserIds])
+                ),
+                (snapShot) => {
+                    setProfiles(
+                        snapShot.docs
+                            .filter((doc) => doc.id !== user.uid)
+                            .map((doc) => ({
+                                id: doc.id,
+                                ...doc.data(),
+                            }))
+                    );
+                }
+            );
         };
         fetchCards();
 
@@ -183,7 +213,7 @@ const HomeScreen = () => {
             </View>
 
             {/* Buttons */}
-            <View className="flex flex-row justify-evenly">
+            <View className="flex flex-row justify-evenly pb-4">
                 <TouchableOpacity
                     onPress={() => swipeRef.current.swipeLeft()}
                     className="items-center justify-center rounded-full w-16 h-16 bg-red-200"
