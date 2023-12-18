@@ -1,9 +1,11 @@
-import React, { useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { View, Text, Button, TouchableOpacity, Image, SafeAreaView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons, Entypo } from "@expo/vector-icons";
 import useAuth from "../hooks/useAuth";
 import Swiper from "react-native-deck-swiper";
+import { collection, doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 const DUMMY_DATA = [
     {
@@ -33,9 +35,55 @@ const DUMMY_DATA = [
 
 const HomeScreen = () => {
     const { user, logout } = useAuth();
+    const [profiles, setProfiles] = useState([]);
 
     const navigation = useNavigation();
     const swipeRef = useRef();
+
+    useLayoutEffect(() => {
+        getDoc(doc(db, "users", user.uid)).then((data) => {
+            if (!data.exists()) {
+                navigation.navigate("Modal");
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        let unsubscribe;
+
+        const fetchCards = async () => {
+            unsubscribe = onSnapshot(collection(db, "users"), (snapShot) => {
+                setProfiles(
+                    snapShot.docs
+                        .filter((doc) => doc.id !== user.uid)
+                        .map((doc) => ({
+                            id: doc.id,
+                            ...doc.data(),
+                        }))
+                );
+            });
+        };
+        fetchCards();
+
+        return unsubscribe;
+    });
+
+    const swipeLeft = (cardIndex) => {
+        if (!profiles[cardIndex]) {
+            return;
+        }
+
+        const userSwiped = profiles[cardIndex];
+        setDoc(doc(db, "users", user.uid, "passes", userSwiped.id), userSwiped);
+    };
+
+    const swipeRight = async (cardIndex) => {
+        if (!profiles[cardIndex]) {
+            return;
+        }
+        const userSwiped = profiles[cardIndex];
+        setDoc(doc(db, "users", user.uid, "swipes", userSwiped.id), userSwiped);
+    };
 
     return (
         <SafeAreaView className="flex-1 pt-6">
@@ -66,16 +114,18 @@ const HomeScreen = () => {
                     containerStyle={{
                         backgroundColor: "transparent",
                     }}
-                    cards={DUMMY_DATA}
+                    cards={profiles}
                     stackSize={5}
                     cardIndex={0}
                     animateCardOpacity
                     verticalSwipe={false}
                     onSwipedLeft={(index) => {
                         console.log("Swipe Pass");
+                        swipeLeft(index);
                     }}
                     onSwipedRight={(index) => {
                         console.log("Swipe Match");
+                        swipeRight(index);
                     }}
                     backgroundColor="#4FD0E9"
                     overlayLabels={{
