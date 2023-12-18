@@ -6,9 +6,12 @@ import {
     updateProfile,
 } from "firebase/auth";
 import { auth } from "../firebase";
+import useAuth from "../hooks/useAuth";
 
 const LoginScreen = () => {
     const [type, setType] = useState(1); // 1 = login, 2 = register
+    const { loading, setLoading } = useAuth();
+
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -23,13 +26,13 @@ const LoginScreen = () => {
         if (email.trim() === "" || password.trim === "") {
             return Alert.alert("Empty Field", "You have not entered all details.");
         }
-
+        setLoading(true);
         signInWithEmailAndPassword(auth, email, password)
             .then(({ user }) => {
-                console.log(user);
+                setLoading(false);
             })
             .catch((error) => {
-                console.log(error);
+                setLoading(false);
             });
     };
 
@@ -37,15 +40,24 @@ const LoginScreen = () => {
         if (name.trim() === "" || email.trim() === "" || password.trim === "") {
             return Alert.alert("Empty Field", "You have not entered all details.");
         }
+        setLoading(true);
         createUserWithEmailAndPassword(auth, email, password)
             .then(({ user }) => {
                 updateProfile(user, { displayName: name });
-                console.log(user);
+                setLoading(false);
             })
             .catch((error) => {
-                console.log(error);
+                setLoading(false);
             });
     };
+
+    if (loading) {
+        return (
+            <View className="flex-1 justify-center items-center">
+                <Text className="font-semibold text-red-400 text-2xl">Loading...</Text>
+            </View>
+        );
+    }
 
     return (
         <ImageBackground className="flex-1" source={require("../assets/bg.png")}>
