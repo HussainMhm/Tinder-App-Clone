@@ -1,5 +1,11 @@
 import { View, Text, TextInput, TouchableOpacity, Alert, ImageBackground } from "react-native";
 import React, { useEffect, useLayoutEffect, useState } from "react";
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    updateProfile,
+} from "firebase/auth";
+import { auth } from "../firebase";
 
 const LoginScreen = () => {
     const [type, setType] = useState(1); // 1 = login, 2 = register
@@ -14,11 +20,31 @@ const LoginScreen = () => {
     }, [type]);
 
     const signIn = () => {
-        console.log(email, password);
+        if (email.trim() === "" || password.trim === "") {
+            return Alert.alert("Empty Field", "You have not entered all details.");
+        }
+
+        signInWithEmailAndPassword(auth, email, password)
+            .then(({ user }) => {
+                console.log(user);
+            })
+            .catch((error) => {
+                console.log(error);
+            });
     };
 
     const signUp = () => {
-        console.log(name, email, password);
+        if (name.trim() === "" || email.trim() === "" || password.trim === "") {
+            return Alert.alert("Empty Field", "You have not entered all details.");
+        }
+        createUserWithEmailAndPassword(auth, email, password)
+            .then(({ user }) => {
+                updateProfile(user, { displayName: name });
+                console.log(user);
+            })
+            .catch((error) => {
+                console.log(error);
+            });
     };
 
     return (
