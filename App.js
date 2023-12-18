@@ -1,11 +1,10 @@
-import { StatusBar } from "expo-status-bar";
-import { Text, View } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import StackNavigator from "./navigation/StackNavigator";
 
 export default function App() {
     return (
-        <View className="flex-1 items-center justify-center bg-white">
-            <Text className="text-xl">Tinder Clone</Text>
-            <StatusBar style="auto" />
-        </View>
+        <NavigationContainer>
+            <StackNavigator />
+        </NavigationContainer>
     );
 }
